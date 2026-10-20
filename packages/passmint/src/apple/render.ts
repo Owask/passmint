@@ -219,6 +219,7 @@ function extractImages(images: Images): Record<string, Uint8Array> {
   const files: Record<string, Uint8Array> = {}
   extractTriple(images.icon, 'icon', files)
   extractTriple(images.logo, 'logo', files)
+  extractTriple(images.primaryLogo, 'primaryLogo', files)
   extractTriple(images.strip, 'strip', files)
   extractTriple(images.thumbnail, 'thumbnail', files)
   extractTriple(images.background, 'background', files)
@@ -294,13 +295,19 @@ function buildStyleContent(
  * poster face shows header fields, primary fields, and a single footer field
  * (plus the background image and barcode, handled elsewhere). It does NOT
  * show secondary/auxiliary/back fields — those live only in the `generic`
- * fallback block.
+ * fallback block. When `posterFields` is set, the block is built only from it.
  */
 function buildPosterGenericContent(
   input: GenericPassInput,
   collector: TranslationCollector,
 ): Record<string, unknown> {
   const content: Record<string, unknown> = {}
+  if (input.posterFields) {
+    for (const [key, fields] of Object.entries(input.posterFields)) {
+      if (fields) content[key] = fields.map((f) => renderField(f, collector))
+    }
+    return content
+  }
   if (input.headerFields)
     content.headerFields = input.headerFields.map((f) => renderField(f, collector))
   if (input.primaryFields)

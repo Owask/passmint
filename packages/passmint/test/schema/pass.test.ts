@@ -410,6 +410,50 @@ describe('GenericPassSchema — poster', () => {
     expect(r.success).toBe(false)
   })
 
+  it('accepts posterFields at the on-device limits with poster: true', () => {
+    const r = v.safeParse(PassInputSchema, {
+      ...base,
+      poster: true,
+      posterFields: {
+        headerFields: [{ key: 'h', value: '1' }],
+        primaryFields: ['a', 'b', 'c', 'd'].map((key) => ({ key, value: key })),
+        footerFields: [{ key: 'f', value: '1' }],
+        additionalInfoFields: [{ key: 'i', value: '1' }],
+        backFields: [{ key: 'b1', value: '1' }],
+      },
+    })
+    expect(r.success).toBe(true)
+  })
+
+  it('rejects posterFields without poster: true', () => {
+    const r = v.safeParse(PassInputSchema, {
+      ...base,
+      posterFields: { primaryFields: [{ key: 'a', value: '1' }] },
+    })
+    expect(r.success).toBe(false)
+  })
+
+  it('rejects posterFields over the on-device limits', () => {
+    for (const posterFields of [
+      { headerFields: ['a', 'b'].map((key) => ({ key, value: key })) },
+      { primaryFields: ['a', 'b', 'c', 'd', 'e'].map((key) => ({ key, value: key })) },
+      { footerFields: ['a', 'b'].map((key) => ({ key, value: key })) },
+    ]) {
+      const r = v.safeParse(PassInputSchema, { ...base, poster: true, posterFields })
+      expect(r.success).toBe(false)
+    }
+  })
+
+  it('rejects top-level footerFields together with posterFields', () => {
+    const r = v.safeParse(PassInputSchema, {
+      ...base,
+      poster: true,
+      footerFields: [{ key: 'f', value: '1' }],
+      posterFields: { primaryFields: [{ key: 'a', value: '1' }] },
+    })
+    expect(r.success).toBe(false)
+  })
+
   it('rejects more than one footerField', () => {
     const r = v.safeParse(PassInputSchema, {
       ...base,

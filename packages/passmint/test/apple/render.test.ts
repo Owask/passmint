@@ -435,6 +435,46 @@ describe('renderApplePass — poster generic', () => {
     expect(result.files['background@2x.png']).toBeDefined()
   })
 
+  it('builds posterGeneric only from posterFields when set', () => {
+    const { footerFields, ...rest } = posterInput
+    const result = renderApplePass({
+      ...rest,
+      backFields: [{ key: 'terms', value: 'Fallback terms' }],
+      posterFields: {
+        headerFields: [{ key: 'tier', label: 'Tier', value: 'Gold' }],
+        primaryFields: [
+          { key: 'id', value: '102035' },
+          { key: 'since', value: '2019' },
+        ],
+        footerFields: [{ key: 'type', value: 'Family Pass' }],
+        additionalInfoFields: [{ key: 'perk', value: 'Free entry' }],
+        backFields: [{ key: 'terms', value: 'Poster terms' }],
+      },
+    })
+    const poster = result.passJson.posterGeneric as Record<string, Array<{ key: string }>>
+    const generic = result.passJson.generic as Record<string, Array<{ key: string }>>
+    expect(poster.headerFields?.map((f) => f.key)).toEqual(['tier'])
+    expect(poster.primaryFields?.map((f) => f.key)).toEqual(['id', 'since'])
+    expect(poster.footerFields?.map((f) => f.key)).toEqual(['type'])
+    expect(poster.additionalInfoFields?.map((f) => f.key)).toEqual(['perk'])
+    expect(poster.backFields).toEqual([{ key: 'terms', value: 'Poster terms' }])
+    expect(generic.headerFields?.map((f) => f.key)).toEqual(['id'])
+    expect(generic.primaryFields?.map((f) => f.key)).toEqual(['tier'])
+    expect(generic.secondaryFields?.map((f) => f.key)).toEqual(['since'])
+    expect(generic.backFields).toEqual([{ key: 'terms', value: 'Fallback terms' }])
+    expect(generic.additionalInfoFields).toBeUndefined()
+  })
+
+  it('includes primaryLogo.png in the file map', () => {
+    const result = renderApplePass({
+      ...posterInput,
+      images: { ...posterInput.images, primaryLogo: { x2: { bytes: ICON }, x3: { bytes: ICON } } },
+    })
+    expect(result.files['primaryLogo@2x.png']).toBeDefined()
+    expect(result.files['primaryLogo@3x.png']).toBeDefined()
+    expect(result.files['logo@2x.png']).toBeUndefined()
+  })
+
   it('a non-poster generic pass emits only the generic key', () => {
     const result = renderApplePass({
       ...baseInput,
@@ -467,5 +507,34 @@ describe('PassBuilder — footerField', () => {
     const rendered = renderApplePass(pass.toObject())
     const poster = rendered.passJson.posterGeneric as Record<string, unknown>
     expect(poster.footerFields).toHaveLength(1)
+  })
+})
+
+describe('PassBuilder — posterField', () => {
+  it('collects fields per poster area and keeps the generic fallback separate', async () => {
+    const { Pass } = await import('../../src/pass')
+    const pass = Pass.generic({
+      passTypeIdentifier: 'pass.com.example.card',
+      serialNumber: 'card-4',
+      teamIdentifier: 'ABCD1234EF',
+      organizationName: 'Example',
+      description: 'Membership card',
+      poster: true,
+      images: {
+        icon: { x2: { bytes: ICON } },
+        background: { x2: { bytes: ICON } },
+      },
+    })
+      .primaryField({ key: 'name', value: 'Ryan' })
+      .posterField('primary', { key: 'name', value: 'Ryan' })
+      .posterField('primary', { key: 'tier', value: 'Gold' })
+      .posterField('additionalInfo', { key: 'perk', value: 'Free entry' })
+      .build()
+    const rendered = renderApplePass(pass.toObject())
+    const poster = rendered.passJson.posterGeneric as Record<string, unknown[]>
+    const generic = rendered.passJson.generic as Record<string, unknown[]>
+    expect(poster.primaryFields).toHaveLength(2)
+    expect(poster.additionalInfoFields).toHaveLength(1)
+    expect(generic.primaryFields).toHaveLength(1)
   })
 })

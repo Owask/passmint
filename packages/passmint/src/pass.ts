@@ -20,6 +20,9 @@ import type {
 } from './schema/pass'
 import type { SemanticTags } from './schema/semantic-tags'
 
+/** A field area of the iOS 27 poster layout, for {@link PassBuilder.posterField}. */
+export type PosterFieldArea = 'header' | 'primary' | 'footer' | 'additionalInfo' | 'back'
+
 /**
  * Default save-link JWT lifetime: 15 minutes. Long enough to cover a
  * normal user journey (email click, browser load, save), short enough
@@ -318,6 +321,19 @@ export class PassBuilder<TInput extends PassInput> {
   footerField(field: Field): this {
     const current = (this.draft as unknown as { footerFields?: Field[] }).footerFields ?? []
     ;(this.draft as unknown as { footerFields?: Field[] }).footerFields = [...current, field]
+    return this
+  }
+
+  /**
+   * Add a field to the poster-only layout (`posterFields`) of a generic pass
+   * built with `poster: true`. Once used, the poster is built only from these
+   * fields and the other adders feed only the `generic` fallback.
+   */
+  posterField(area: PosterFieldArea, field: Field): this {
+    const draft = this.draft as unknown as { posterFields?: Record<string, Field[]> }
+    const key = `${area}Fields`
+    const posterFields = draft.posterFields ?? {}
+    draft.posterFields = { ...posterFields, [key]: [...(posterFields[key] ?? []), field] }
     return this
   }
 

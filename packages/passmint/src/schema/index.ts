@@ -31,6 +31,7 @@ export type {
   GoogleLoyaltyPoints,
   PassInput,
   PassStyle,
+  PosterFields,
   StoreCardInput,
 } from './pass'
 export { PassInputSchema } from './pass'

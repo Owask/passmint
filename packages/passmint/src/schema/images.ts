@@ -105,6 +105,11 @@ export type GoogleObjectImages = v.InferOutput<typeof GoogleObjectImagesSchema>
 export const ImagesSchema = v.object({
   icon: ImageTripleSchema,
   logo: v.optional(ImageTripleSchema),
+  /**
+   * Apple `primaryLogo.png`: the logo poster passes show (iOS 27 poster
+   * generic) instead of `logo`. Up to 126×30 pt. Apple-only; Google ignores it.
+   */
+  primaryLogo: v.optional(ImageTripleSchema),
   strip: v.optional(ImageTripleSchema),
   thumbnail: v.optional(ImageTripleSchema),
   background: v.optional(ImageTripleSchema),

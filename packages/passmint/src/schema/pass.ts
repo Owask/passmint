@@ -270,6 +270,21 @@ export const CouponSchema = v.object({
 })
 export type CouponInput = v.InferOutput<typeof CouponSchema>
 
+/**
+ * Poster-only field layout for an iOS 27 poster generic pass, so the poster
+ * can be arranged independently of the `generic` fallback. Limits match what
+ * Wallet shows on device: 1 header, 4 primary, 1 footer.
+ */
+export const PosterFieldsSchema = v.object({
+  headerFields: v.optional(v.pipe(v.array(FieldSchema), v.maxLength(1))),
+  primaryFields: v.optional(v.pipe(v.array(FieldSchema), v.maxLength(4))),
+  footerFields: v.optional(v.pipe(v.array(FieldSchema), v.maxLength(1))),
+  /** Shown as cards below the pass in Wallet. */
+  additionalInfoFields: v.optional(v.array(FieldSchema)),
+  backFields: v.optional(v.array(FieldSchema)),
+})
+export type PosterFields = v.InferOutput<typeof PosterFieldsSchema>
+
 export const GenericPassSchema = v.pipe(
   v.object({
     ...PassBaseSchema.entries,
@@ -288,6 +303,12 @@ export const GenericPassSchema = v.pipe(
      * first, so at most one is allowed.
      */
     footerFields: v.optional(v.pipe(v.array(FieldSchema), v.maxLength(1))),
+    /**
+     * When set, the `posterGeneric` block is built only from these fields;
+     * the top-level field arrays then feed only the `generic` fallback.
+     * Requires `poster: true`.
+     */
+    posterFields: v.optional(PosterFieldsSchema),
   }),
   v.check(
     (input) => !input.poster || input.images.background !== undefined,
@@ -296,6 +317,14 @@ export const GenericPassSchema = v.pipe(
   v.check(
     (input) => input.poster === true || input.footerFields === undefined,
     'footerFields requires poster: true (standard generic passes have no text footer)',
+  ),
+  v.check(
+    (input) => input.poster === true || input.posterFields === undefined,
+    'posterFields requires poster: true',
+  ),
+  v.check(
+    (input) => input.posterFields === undefined || input.footerFields === undefined,
+    'Use posterFields.footerFields instead of footerFields when posterFields is set',
   ),
 )
 export type GenericPassInput = v.InferOutput<typeof GenericPassSchema>

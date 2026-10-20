@@ -47,7 +47,7 @@ export {
   renderGooglePayload,
   signSaveJwt,
 } from './google'
-export type { GoogleSaveOptions } from './pass'
+export type { GoogleSaveOptions, PosterFieldArea } from './pass'
 // --- The main facade ---
 export { DEFAULT_GOOGLE_JWT_EXPIRY_SECONDS, Pass, PassBuilder, SignedPass } from './pass'
 export { MAX_IMAGE_BYTE_LENGTH } from './schema/images'
@@ -77,6 +77,7 @@ export type {
   NumberStyle,
   PassInput,
   PassStyle,
+  PosterFields,
   SemanticTags,
   StoreCardInput,
   TextAlignment,
