@@ -15,6 +15,7 @@ All additive: a pass that uses none of them renders exactly as upstream.
 |---|---|
 | `images.primaryLogo` → `primaryLogo.png`. The iOS 27 poster shows this logo, not `logo.png` (verified on device, 2026-10-20). Apple-only. | `src/schema/images.ts`, `src/apple/render.ts` |
 | `posterFields` on generic passes (`headerFields` ≤1, `primaryFields` ≤4, `footerFields` ≤1, `additionalInfoFields`, `backFields`). When set, `posterGeneric` is built only from it, so the poster and the `generic` fallback can be arranged separately. Limits are what Wallet showed on an iOS 27 iPhone. | `src/schema/pass.ts`, `src/apple/render.ts`, `src/pass.ts` (`.posterField(area, field)`), type exports |
+| Featured Action `call` takes a `tel:` link, the only form Wallet shows (verified on device). All other types stay HTTPS-only. | `src/schema/featured-actions.ts` |
 | Fork publishing | `fork/` |
 
 ## Merging an upstream release
