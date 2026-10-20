@@ -3,7 +3,7 @@
 Branch `tapace` is upstream [getpassmint/passmint](https://github.com/getpassmint/passmint)
 plus the changes below. It is published to npm as `@owask/passmint`. The source package
 keeps the name `passmint`, so the workspace and upstream merges are unaffected. Only
-`fork/publish.mjs` renames it, inside the published tarball.
+`fork/scripts/publish.mjs` renames it, inside the published tarball.
 
 Based on upstream `5e605a1` (passmint 0.7.0).
 
@@ -46,6 +46,6 @@ Log in to npm as an owner of the `@owask` scope, bump `fork/fork.json` `version`
 (`-tapace.2`, …), then:
 
 ```bash
-node fork/publish.mjs --dry-run
-node fork/publish.mjs
+node fork/scripts/publish.mjs --dry-run
+node fork/scripts/publish.mjs
 ```

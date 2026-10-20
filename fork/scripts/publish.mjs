@@ -1,13 +1,13 @@
 // Packs packages/passmint with pnpm (which resolves `catalog:` versions), then
 // renames it to the fork's package name and version and publishes with npm.
-// Usage: node fork/publish.mjs [--dry-run]
+// Usage: node fork/scripts/publish.mjs [--dry-run]
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const pkgDir = join(root, 'packages', 'passmint')
 const fork = JSON.parse(readFileSync(join(root, 'fork', 'fork.json'), 'utf8'))
 const dryRun = process.argv.includes('--dry-run')
