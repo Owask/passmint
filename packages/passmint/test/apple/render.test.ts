@@ -538,3 +538,37 @@ describe('PassBuilder — posterField', () => {
     expect(generic.primaryFields).toHaveLength(1)
   })
 })
+
+describe('renderApplePass — poster event ticket', () => {
+  const ticket = {
+    ...baseInput,
+    style: 'eventTicket' as const,
+    images: {
+      icon: { x2: { bytes: ICON } },
+      background: { x2: { bytes: ICON } },
+      artwork: { x2: { bytes: ICON } },
+    },
+    primaryFields: [{ key: 'event', value: 'Fallback' }],
+  }
+
+  it('emits posterGeneric beside the eventTicket block, with artwork.png', () => {
+    const result = renderApplePass({
+      ...ticket,
+      poster: true,
+      posterFields: { primaryFields: [{ key: 'event', value: 'Poster' }] },
+    })
+    const poster = result.passJson.posterGeneric as Record<string, Array<{ value: string }>>
+    const fallback = result.passJson.eventTicket as Record<string, Array<{ value: string }>>
+    expect(poster.primaryFields?.[0]?.value).toBe('Poster')
+    expect(fallback.primaryFields?.[0]?.value).toBe('Fallback')
+    expect(result.passJson.generic).toBeUndefined()
+    expect(result.files['artwork@2x.png']).toBeDefined()
+    expect(result.files['background@2x.png']).toBeDefined()
+  })
+
+  it('emits only the eventTicket block without the poster', () => {
+    const result = renderApplePass(ticket)
+    expect(result.passJson.posterGeneric).toBeUndefined()
+    expect(result.passJson.eventTicket).toBeDefined()
+  })
+})

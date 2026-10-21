@@ -507,3 +507,41 @@ describe('parsePassInput — google.loyalty (storeCard)', () => {
     expect(pass).not.toHaveProperty('google')
   })
 })
+
+describe('EventTicketSchema — poster', () => {
+  const base = {
+    style: 'eventTicket' as const,
+    passTypeIdentifier: 'pass.com.example.event',
+    serialNumber: 'ticket-1',
+    teamIdentifier: 'ABCD1234EF',
+    organizationName: 'Example',
+    description: 'Concert ticket',
+    images: {
+      icon: { x2: { bytes: new Uint8Array([1]) } },
+      artwork: { x2: { bytes: new Uint8Array([2]) } },
+    },
+  }
+
+  it('accepts poster: true with artwork and poster fields', () => {
+    const r = v.safeParse(PassInputSchema, {
+      ...base,
+      poster: true,
+      posterFields: { primaryFields: [{ key: 'event', value: 'Midnight Sessions' }] },
+    })
+    expect(r.success).toBe(true)
+  })
+
+  it('rejects poster: true without artwork', () => {
+    const { artwork, ...images } = base.images
+    const r = v.safeParse(PassInputSchema, { ...base, images, poster: true })
+    expect(r.success).toBe(false)
+  })
+
+  it('rejects posterFields without poster: true', () => {
+    const r = v.safeParse(PassInputSchema, {
+      ...base,
+      posterFields: { primaryFields: [{ key: 'event', value: 'x' }] },
+    })
+    expect(r.success).toBe(false)
+  })
+})

@@ -222,11 +222,44 @@ export const BoardingPassSchema = v.object({
 })
 export type BoardingPassInput = v.InferOutput<typeof BoardingPassSchema>
 
-export const EventTicketSchema = v.object({
-  ...PassBaseSchema.entries,
-  style: v.literal('eventTicket'),
-  ...StandardFieldLayout,
+/**
+ * Poster-only field layout for an iOS 27 poster generic pass, so the poster
+ * can be arranged independently of the `generic` fallback. Limits match what
+ * Wallet shows on device: 1 header, 4 primary, 1 footer.
+ */
+export const PosterFieldsSchema = v.object({
+  headerFields: v.optional(v.pipe(v.array(FieldSchema), v.maxLength(1))),
+  primaryFields: v.optional(v.pipe(v.array(FieldSchema), v.maxLength(4))),
+  footerFields: v.optional(v.pipe(v.array(FieldSchema), v.maxLength(1))),
+  /** Shown as cards below the pass in Wallet. */
+  additionalInfoFields: v.optional(v.array(FieldSchema)),
+  backFields: v.optional(v.array(FieldSchema)),
 })
+export type PosterFields = v.InferOutput<typeof PosterFieldsSchema>
+
+export const EventTicketSchema = v.pipe(
+  v.object({
+    ...PassBaseSchema.entries,
+    style: v.literal('eventTicket'),
+    ...StandardFieldLayout,
+    /**
+     * Also emit an iOS 27 `posterGeneric` block beside `eventTicket`, which
+     * iOS 26 and earlier keep showing. The poster art is `images.artwork`,
+     * since `background.png` is the event ticket's own blurred background.
+     */
+    poster: v.optional(v.boolean()),
+    /** The poster's own field layout; without it the poster uses header and primary fields. */
+    posterFields: v.optional(PosterFieldsSchema),
+  }),
+  v.check(
+    (input) => !input.poster || input.images.artwork !== undefined,
+    'A poster event ticket (poster: true) requires images.artwork',
+  ),
+  v.check(
+    (input) => input.poster === true || input.posterFields === undefined,
+    'posterFields requires poster: true',
+  ),
+)
 export type EventTicketInput = v.InferOutput<typeof EventTicketSchema>
 
 /**
@@ -270,20 +303,6 @@ export const CouponSchema = v.object({
 })
 export type CouponInput = v.InferOutput<typeof CouponSchema>
 
-/**
- * Poster-only field layout for an iOS 27 poster generic pass, so the poster
- * can be arranged independently of the `generic` fallback. Limits match what
- * Wallet shows on device: 1 header, 4 primary, 1 footer.
- */
-export const PosterFieldsSchema = v.object({
-  headerFields: v.optional(v.pipe(v.array(FieldSchema), v.maxLength(1))),
-  primaryFields: v.optional(v.pipe(v.array(FieldSchema), v.maxLength(4))),
-  footerFields: v.optional(v.pipe(v.array(FieldSchema), v.maxLength(1))),
-  /** Shown as cards below the pass in Wallet. */
-  additionalInfoFields: v.optional(v.array(FieldSchema)),
-  backFields: v.optional(v.array(FieldSchema)),
-})
-export type PosterFields = v.InferOutput<typeof PosterFieldsSchema>
 
 export const GenericPassSchema = v.pipe(
   v.object({

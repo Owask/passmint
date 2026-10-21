@@ -113,6 +113,11 @@ export const ImagesSchema = v.object({
   strip: v.optional(ImageTripleSchema),
   thumbnail: v.optional(ImageTripleSchema),
   background: v.optional(ImageTripleSchema),
+  /**
+   * Apple `artwork.png`: iOS 27 poster art. Wallet prefers it over
+   * `background.png` on a poster. Apple-only; Google ignores it.
+   */
+  artwork: v.optional(ImageTripleSchema),
   footer: v.optional(ImageTripleSchema),
   /**
    * Google Wallet hero image. Google-only; no Apple analog.

@@ -4,7 +4,7 @@ import type { Field } from '../schema/fields'
 import type { ImageSource, Images, ImageTriple } from '../schema/images'
 import type { LocalizedString } from '../schema/localization'
 import { defaultValue, translations } from '../schema/localization'
-import type { GenericPassInput, PassInput } from '../schema/pass'
+import type { EventTicketInput, GenericPassInput, PassInput } from '../schema/pass'
 import { encodeStringsFile } from './strings'
 
 /**
@@ -223,6 +223,7 @@ function extractImages(images: Images): Record<string, Uint8Array> {
   extractTriple(images.strip, 'strip', files)
   extractTriple(images.thumbnail, 'thumbnail', files)
   extractTriple(images.background, 'background', files)
+  extractTriple(images.artwork, 'artwork', files)
   extractTriple(images.footer, 'footer', files)
   // heroImage is Google-only and does not appear in the pkpass.
   return files
@@ -298,7 +299,7 @@ function buildStyleContent(
  * fallback block. When `posterFields` is set, the block is built only from it.
  */
 function buildPosterGenericContent(
-  input: GenericPassInput,
+  input: GenericPassInput | EventTicketInput,
   collector: TranslationCollector,
 ): Record<string, unknown> {
   const content: Record<string, unknown> = {}
@@ -312,7 +313,7 @@ function buildPosterGenericContent(
     content.headerFields = input.headerFields.map((f) => renderField(f, collector))
   if (input.primaryFields)
     content.primaryFields = input.primaryFields.map((f) => renderField(f, collector))
-  if (input.footerFields)
+  if ('footerFields' in input && input.footerFields)
     content.footerFields = input.footerFields.map((f) => renderField(f, collector))
   return content
 }
@@ -375,9 +376,9 @@ export function renderApplePass(input: PassInput): AppleRenderedPass {
 
   if (input.featuredActions) passJson.featuredActions = input.featuredActions
 
-  if (input.style === 'generic' && input.poster) {
-    // Emit both blocks: posterGeneric for iOS 27+, generic as the iOS 26- fallback.
-    passJson.generic = buildStyleContent(input, collector)
+  if ((input.style === 'generic' || input.style === 'eventTicket') && input.poster) {
+    // Emit both blocks: posterGeneric for iOS 27+, the style's own block as the iOS 26- fallback.
+    passJson[input.style] = buildStyleContent(input, collector)
     passJson.posterGeneric = buildPosterGenericContent(input, collector)
   } else {
     passJson[input.style] = buildStyleContent(input, collector)
