@@ -228,6 +228,27 @@ describe('parsePassInput — locations and beacons', () => {
   })
 })
 
+describe('parsePassInput — relevantDates', () => {
+  it('accepts windows with a timezone', () => {
+    const pass = parsePassInput({
+      style: 'generic',
+      ...validBase,
+      relevantDates: [{ startDate: '2026-11-02T18:00:00Z', endDate: '2026-11-03T02:00:00Z' }],
+    })
+    expect(pass.relevantDates).toHaveLength(1)
+  })
+
+  it('rejects a window that ends before it starts', () => {
+    expect(() =>
+      parsePassInput({
+        style: 'generic',
+        ...validBase,
+        relevantDates: [{ startDate: '2026-11-02T18:00:00Z', endDate: '2026-11-02T17:00:00Z' }],
+      }),
+    ).toThrow(PassmintSchemaError)
+  })
+})
+
 describe('parsePassInput — error preserves issues', () => {
   it('catchable PassmintSchemaError with issues array', () => {
     try {

@@ -354,6 +354,9 @@ export function renderApplePass(input: PassInput): AppleRenderedPass {
 
   if (input.expirationDate !== undefined) passJson.expirationDate = input.expirationDate
   if (input.relevantDate !== undefined) passJson.relevantDate = input.relevantDate
+  if (input.relevantDates && input.relevantDates.length > 0) {
+    passJson.relevantDates = input.relevantDates
+  }
   if (input.voided !== undefined) passJson.voided = input.voided
   if (input.sharingProhibited !== undefined) passJson.sharingProhibited = input.sharingProhibited
   if (input.groupingIdentifier !== undefined) passJson.groupingIdentifier = input.groupingIdentifier

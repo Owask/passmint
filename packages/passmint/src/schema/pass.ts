@@ -22,6 +22,18 @@ const IsoDateTimeSchema = v.pipe(
 )
 
 /**
+ * A window when the pass is relevant on the Lock Screen (iOS 18+). Apple-only;
+ * Google has no equivalent.
+ */
+const RelevantDateSchema = v.pipe(
+  v.object({ startDate: IsoDateTimeSchema, endDate: IsoDateTimeSchema }),
+  v.check(
+    (w) => Date.parse(w.endDate) > Date.parse(w.startDate),
+    'relevantDates: endDate must be after startDate',
+  ),
+)
+
+/**
  * Apple Pass Type Identifier. Reverse-DNS starting with `pass.`, matching
  * the Pass Type ID certificate's Common Name.
  */
@@ -156,6 +168,7 @@ const PassBaseSchema = v.object({
   // --- lifecycle ---
   expirationDate: v.optional(IsoDateTimeSchema),
   relevantDate: v.optional(IsoDateTimeSchema),
+  relevantDates: v.optional(v.array(RelevantDateSchema)),
   voided: v.optional(v.boolean()),
   sharingProhibited: v.optional(v.boolean()),
   groupingIdentifier: v.optional(v.string()),
@@ -302,7 +315,6 @@ export const CouponSchema = v.object({
   ...StandardFieldLayout,
 })
 export type CouponInput = v.InferOutput<typeof CouponSchema>
-
 
 export const GenericPassSchema = v.pipe(
   v.object({

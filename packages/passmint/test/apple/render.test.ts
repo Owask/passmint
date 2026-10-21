@@ -305,6 +305,16 @@ describe('renderApplePass — web service + locations', () => {
     expect(result.passJson.beacons).toHaveLength(1)
     expect(result.passJson.maxDistance).toBe(500)
   })
+
+  it('emits relevantDates windows', () => {
+    const windows = [
+      { startDate: '2026-11-02T18:00:00+05:30', endDate: '2026-11-02T23:00:00+05:30' },
+    ]
+    const result = renderApplePass({ ...baseInput, style: 'eventTicket', relevantDates: windows })
+    expect(result.passJson.relevantDates).toEqual(windows)
+    const none = renderApplePass({ ...baseInput, style: 'eventTicket', relevantDates: [] })
+    expect(none.passJson).not.toHaveProperty('relevantDates')
+  })
 })
 
 describe('renderApplePass — featured actions', () => {
