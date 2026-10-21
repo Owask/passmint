@@ -17,6 +17,7 @@ All additive: a pass that uses none of them renders exactly as upstream.
 | `posterFields` on generic passes (`headerFields` ≤1, `primaryFields` ≤4, `footerFields` ≤1, `additionalInfoFields`, `backFields`). When set, `posterGeneric` is built only from it, so the poster and the `generic` fallback can be arranged separately. Limits are what Wallet showed on an iOS 27 iPhone. | `src/schema/pass.ts`, `src/apple/render.ts`, `src/pass.ts` (`.posterField(area, field)`), type exports |
 | Featured Action `call` takes a `tel:` link, the only form Wallet shows (verified on device). All other types stay HTTPS-only. | `src/schema/featured-actions.ts` |
 | `poster` / `posterFields` on event tickets: `posterGeneric` beside the `eventTicket` block, with the art in the new `images.artwork` (`artwork.png`), since `background.png` is the event ticket's own background (verified on device, 2026-10-21). | `src/schema/pass.ts`, `src/schema/images.ts`, `src/apple/render.ts` |
+| `relevantDates` (`startDate`/`endDate` windows, end after start) beside the deprecated single `relevantDate`; the pass shows on the Lock Screen during each window (verified on device, 2026-10-21). Apple-only; Google ignores it. | `src/schema/pass.ts`, `src/apple/render.ts` |
 | Fork publishing | `fork/` |
 
 ## Merging an upstream release
