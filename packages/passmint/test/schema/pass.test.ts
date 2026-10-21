@@ -228,6 +228,36 @@ describe('parsePassInput — locations and beacons', () => {
   })
 })
 
+describe('parsePassInput — Google event extras', () => {
+  it('accepts card rows of one to three items', () => {
+    const pass = parsePassInput({
+      style: 'eventTicket',
+      ...validBase,
+      google: {
+        event: {
+          venueAddress: 'Colombo',
+          cardRows: [
+            [{ field: 'tier' }],
+            [{ event: 'start', format: 'TIME_ONLY' }, { seat: 'gate' }],
+          ],
+        },
+      },
+    })
+    expect(pass.style === 'eventTicket' && pass.google?.event?.cardRows).toHaveLength(2)
+  })
+
+  it.each([
+    [[[{ field: 'a' }, { field: 'b' }, { field: 'c' }, { field: 'd' }]]],
+    [[[{ field: 'a' }], [{ field: 'b' }], [{ field: 'c' }], [{ field: 'd' }]]],
+    [[[{ seat: 'box' }]]],
+    [[[{ field: 'a', seat: 'row' }]]],
+  ])('rejects invalid card rows %#', (cardRows) => {
+    expect(() =>
+      parsePassInput({ style: 'eventTicket', ...validBase, google: { event: { cardRows } } }),
+    ).toThrow(PassmintSchemaError)
+  })
+})
+
 describe('parsePassInput — relevantDates', () => {
   it('accepts windows with a timezone', () => {
     const pass = parsePassInput({
@@ -521,7 +551,7 @@ describe('parsePassInput — google.loyalty (storeCard)', () => {
 
   it('ignores google on other styles (unknown keys are stripped, as before)', () => {
     const pass = parsePassInput({
-      style: 'eventTicket',
+      style: 'coupon',
       ...validBase,
       google: { loyalty: { points: { label: 'x', balance: 1 } } },
     })

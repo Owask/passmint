@@ -50,6 +50,113 @@ describe('renderGooglePayload — event ticket', () => {
     expect(obj.classId).toBe(`${issuerId}.gr-1-class`)
     expect(obj.state).toBe('ACTIVE')
     expect(obj.ticketNumber).toBe('gr-1')
+    expect(cls).not.toHaveProperty('eventId')
+    expect(cls).not.toHaveProperty('dateTime')
+    expect(obj).not.toHaveProperty('seatInfo')
+  })
+
+  const local = (value: string) => ({ defaultValue: { language: 'en', value } })
+  const event: PassInput = {
+    ...base,
+    style: 'eventTicket',
+    logoText: 'Hall 9 Events',
+    semantics: {
+      eventName: 'Midnight Sessions',
+      venueName: 'Hall 9',
+      venueLocation: { latitude: 6.9271, longitude: 79.8612 },
+      venueDoorsOpenDate: '2026-11-02T18:00:00+05:30',
+      eventStartDate: '2026-11-02T18:30:00+05:30',
+      eventEndDate: '2026-11-02T23:00:00+05:30',
+      venueEntrance: 'B',
+      seats: [{ seatSection: 'Floor', seatRow: 'C', seatNumber: '11' }],
+    },
+    secondaryFields: [{ key: 'tier', label: 'Tier', value: 'Gold' }],
+    google: {
+      event: {
+        venueAddress: '12 Example Road\nColombo',
+        doorsOpenLabel: 'gatesOpen',
+        ticketHolderName: 'Ada',
+        ticketType: 'VIP',
+        cardRows: [
+          [{ field: 'tier' }, { event: 'start', format: 'TIME_ONLY' }],
+          [{ seat: 'section' }, { seat: 'row' }, { seat: 'seat' }],
+        ],
+      },
+    },
+  }
+
+  it('maps event semantics and google.event onto the class and the ticket', () => {
+    const { cls, obj } = getClassAndObject(
+      renderGooglePayload(event, { issuerId }) as Record<string, unknown>,
+      'eventTicketClasses',
+      'eventTicketObjects',
+    )
+    expect(cls.eventName).toEqual(local('Midnight Sessions'))
+    expect(cls.issuerName).toBe('Hall 9 Events')
+    expect(cls.eventId).toBe(`${issuerId}.gr-1-class`)
+    expect(cls.venue).toEqual({ name: local('Hall 9'), address: local('12 Example Road\nColombo') })
+    expect(cls.dateTime).toEqual({
+      doorsOpen: '2026-11-02T18:00:00+05:30',
+      start: '2026-11-02T18:30:00+05:30',
+      end: '2026-11-02T23:00:00+05:30',
+      doorsOpenLabel: 'GATES_OPEN',
+    })
+    expect(cls.merchantLocations).toEqual([{ latitude: 6.9271, longitude: 79.8612 }])
+    expect(obj.seatInfo).toEqual({
+      seat: local('11'),
+      row: local('C'),
+      section: local('Floor'),
+      gate: local('B'),
+    })
+    expect(obj.ticketHolderName).toBe('Ada')
+    expect(obj.ticketType).toEqual(local('VIP'))
+  })
+
+  it('turns card rows into a card template override', () => {
+    const { cls } = getClassAndObject(
+      renderGooglePayload(event, { issuerId }) as Record<string, unknown>,
+      'eventTicketClasses',
+      'eventTicketObjects',
+    )
+    expect(cls.classTemplateInfo).toEqual({
+      cardTemplateOverride: {
+        cardRowTemplateInfos: [
+          {
+            twoItems: {
+              startItem: {
+                firstValue: { fields: [{ fieldPath: "object.textModulesData['tier']" }] },
+              },
+              endItem: {
+                firstValue: {
+                  fields: [{ fieldPath: 'class.dateTime.start', dateFormat: 'TIME_ONLY' }],
+                },
+              },
+            },
+          },
+          {
+            threeItems: {
+              startItem: { firstValue: { fields: [{ fieldPath: 'object.seatInfo.section' }] } },
+              middleItem: { firstValue: { fields: [{ fieldPath: 'object.seatInfo.row' }] } },
+              endItem: { firstValue: { fields: [{ fieldPath: 'object.seatInfo.seat' }] } },
+            },
+          },
+        ],
+      },
+    })
+  })
+
+  it('leaves the venue off without an address, which Google requires', () => {
+    const { cls } = getClassAndObject(
+      renderGooglePayload({ ...event, google: {} } as PassInput, { issuerId }) as Record<
+        string,
+        unknown
+      >,
+      'eventTicketClasses',
+      'eventTicketObjects',
+    )
+    expect(cls).not.toHaveProperty('venue')
+    expect(cls).not.toHaveProperty('eventId')
+    expect(cls.dateTime).toMatchObject({ start: '2026-11-02T18:30:00+05:30' })
   })
 })
 

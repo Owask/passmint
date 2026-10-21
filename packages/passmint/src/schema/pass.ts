@@ -250,11 +250,57 @@ export const PosterFieldsSchema = v.object({
 })
 export type PosterFields = v.InferOutput<typeof PosterFieldsSchema>
 
+const GoogleDateFormatSchema = v.picklist([
+  'DATE_TIME',
+  'DATE_ONLY',
+  'TIME_ONLY',
+  'DATE_TIME_YEAR',
+  'DATE_YEAR',
+  'YEAR_MONTH',
+  'YEAR_MONTH_DAY',
+])
+
+/**
+ * One item on a Google event ticket's card front: a pass field (by key), an
+ * event time from `semantics`, or a seat value.
+ */
+const GoogleEventCardItemSchema = v.union([
+  v.strictObject({ field: v.pipe(v.string(), v.minLength(1)) }),
+  v.strictObject({
+    event: v.picklist(['doorsOpen', 'start', 'end']),
+    format: v.optional(GoogleDateFormatSchema),
+  }),
+  v.strictObject({ seat: v.picklist(['seat', 'row', 'section', 'gate']) }),
+])
+export type GoogleEventCardItem = v.InferOutput<typeof GoogleEventCardItemSchema>
+
+/**
+ * Google-only event ticket extras. The event name, venue name, times, venue
+ * location and seat come from `semantics`; Google also needs the venue address
+ * to show the venue. `cardRows` replace Google's default card-front rows.
+ */
+const GoogleEventSchema = v.object({
+  venueAddress: v.optional(v.pipe(v.string(), v.minLength(1))),
+  doorsOpenLabel: v.optional(v.picklist(['doorsOpen', 'gatesOpen'])),
+  ticketHolderName: v.optional(v.pipe(v.string(), v.minLength(1))),
+  ticketType: v.optional(v.pipe(v.string(), v.minLength(1))),
+  cardRows: v.optional(
+    v.pipe(
+      v.array(v.pipe(v.array(GoogleEventCardItemSchema), v.minLength(1), v.maxLength(3))),
+      v.minLength(1),
+      v.maxLength(3),
+    ),
+  ),
+})
+export type GoogleEvent = v.InferOutput<typeof GoogleEventSchema>
+
 export const EventTicketSchema = v.pipe(
   v.object({
     ...PassBaseSchema.entries,
     style: v.literal('eventTicket'),
     ...StandardFieldLayout,
+    /** Google Wallet only. See {@link GoogleEvent}. */
+    google: v.optional(v.object({ event: v.optional(GoogleEventSchema) })),
     /**
      * Also emit an iOS 27 `posterGeneric` block beside `eventTicket`, which
      * iOS 26 and earlier keep showing. The poster art is `images.artwork`,

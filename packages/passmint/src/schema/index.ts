@@ -27,6 +27,8 @@ export type {
   CouponInput,
   EventTicketInput,
   GenericPassInput,
+  GoogleEvent,
+  GoogleEventCardItem,
   GoogleLoyalty,
   GoogleLoyaltyPoints,
   PassInput,

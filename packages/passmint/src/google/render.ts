@@ -5,7 +5,7 @@ import type { GoogleObjectImages, ImageSource } from '../schema/images'
 import type { LocalizedString } from '../schema/localization'
 import { defaultValue, translations } from '../schema/localization'
 import type { Location } from '../schema/locations'
-import type { GoogleLoyaltyPoints, PassInput } from '../schema/pass'
+import type { GoogleEventCardItem, GoogleLoyaltyPoints, PassInput } from '../schema/pass'
 import type { GoogleSavePayload } from './jwt'
 
 /**
@@ -319,6 +319,80 @@ function commonObjectFields(
   return obj
 }
 
+const EVENT_TIME_PATHS = {
+  doorsOpen: 'class.dateTime.doorsOpen',
+  start: 'class.dateTime.start',
+  end: 'class.dateTime.end',
+} as const
+
+function eventCardItem(item: GoogleEventCardItem): Record<string, unknown> {
+  let reference: Record<string, unknown>
+  if ('field' in item) reference = { fieldPath: `object.textModulesData['${item.field}']` }
+  else if ('seat' in item) reference = { fieldPath: `object.seatInfo.${item.seat}` }
+  else {
+    reference = { fieldPath: EVENT_TIME_PATHS[item.event] }
+    if (item.format) reference.dateFormat = item.format
+  }
+  return { firstValue: { fields: [reference] } }
+}
+
+function eventCardRow(row: readonly GoogleEventCardItem[]): Record<string, unknown> {
+  const [first, second, third] = row.map(eventCardItem)
+  if (row.length === 1) return { oneItem: { item: first } }
+  if (row.length === 2) return { twoItems: { startItem: first, endItem: second } }
+  return { threeItems: { startItem: first, middleItem: second, endItem: third } }
+}
+
+function eventClassFields(input: PassInput, classId: string): Record<string, unknown> {
+  const semantics = input.semantics
+  const google = input.style === 'eventTicket' ? input.google?.event : undefined
+  const out: Record<string, unknown> = {
+    eventName: toGoogleLocalized(semantics?.eventName ?? resolveTitle(input)),
+  }
+  // Google groups saved tickets of one event by eventId (max 64 characters).
+  if (google && classId.length <= 64) out.eventId = classId
+  if (semantics?.venueName && google?.venueAddress) {
+    out.venue = {
+      name: toGoogleLocalized(semantics.venueName),
+      address: toGoogleLocalized(google.venueAddress),
+    }
+  }
+  const dateTime: Record<string, unknown> = {}
+  if (semantics?.venueDoorsOpenDate) dateTime.doorsOpen = semantics.venueDoorsOpenDate
+  if (semantics?.eventStartDate) dateTime.start = semantics.eventStartDate
+  if (semantics?.eventEndDate) dateTime.end = semantics.eventEndDate
+  if (google?.doorsOpenLabel && dateTime.doorsOpen) {
+    dateTime.doorsOpenLabel = google.doorsOpenLabel === 'gatesOpen' ? 'GATES_OPEN' : 'DOORS_OPEN'
+  }
+  if (Object.keys(dateTime).length > 0) out.dateTime = dateTime
+  if (semantics?.venueLocation) {
+    const { latitude, longitude } = semantics.venueLocation
+    out.merchantLocations = [{ latitude, longitude }]
+  }
+  if (google?.cardRows) {
+    out.classTemplateInfo = {
+      cardTemplateOverride: { cardRowTemplateInfos: google.cardRows.map(eventCardRow) },
+    }
+  }
+  return out
+}
+
+function eventObjectFields(input: PassInput): Record<string, unknown> {
+  const semantics = input.semantics
+  const google = input.style === 'eventTicket' ? input.google?.event : undefined
+  const out: Record<string, unknown> = {}
+  const seat = semantics?.seats?.[0]
+  const seatInfo: Record<string, unknown> = {}
+  if (seat?.seatNumber) seatInfo.seat = toGoogleLocalized(seat.seatNumber)
+  if (seat?.seatRow) seatInfo.row = toGoogleLocalized(seat.seatRow)
+  if (seat?.seatSection) seatInfo.section = toGoogleLocalized(seat.seatSection)
+  if (semantics?.venueEntrance) seatInfo.gate = toGoogleLocalized(semantics.venueEntrance)
+  if (Object.keys(seatInfo).length > 0) out.seatInfo = seatInfo
+  if (google?.ticketHolderName) out.ticketHolderName = google.ticketHolderName
+  if (google?.ticketType) out.ticketType = toGoogleLocalized(google.ticketType)
+  return out
+}
+
 function renderEventTicket(input: PassInput, classId: string, objectId: string): StyleResult {
   return {
     classKey: 'eventTicketClasses',
@@ -326,11 +400,12 @@ function renderEventTicket(input: PassInput, classId: string, objectId: string):
     classDef: {
       ...commonClassFields(input, classId),
       ...classImageFields(input, 'logo'),
-      eventName: toGoogleLocalized(resolveTitle(input)),
+      ...eventClassFields(input, classId),
     },
     objectDef: {
       ...commonObjectFields(input, classId, objectId),
       ticketNumber: input.serialNumber,
+      ...eventObjectFields(input),
     },
   }
 }
